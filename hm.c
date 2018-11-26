@@ -427,8 +427,8 @@ return type to anything you want
 				/*for (int i = 0; i < N_PAGES_PER_BLOCK; i++)
 				{
 					printf("%d ", log_PMT[log_mem][i]);
-				}*/
-				//partial_merge(data_block, log_block, flag);
+				}
+				
 				if (cost > written_pages_per_block[data_block] - flag)
 				{
 					cost = written_pages_per_block[data_block] - flag;
@@ -437,7 +437,9 @@ return type to anything you want
 					flagging = flag;
 					mod = 1;
 					continue;
-				}
+				}*/
+				full_merge(data_block, log_block);
+				return;
 
 				//assert(0);
 			}
@@ -448,7 +450,8 @@ return type to anything you want
 				victim_log = log_block;
 				mod = -1;
 			}
-			//full_merge(data_block, log_block);
+			full_merge(data_block, log_block);
+			return;
 		}
 	}
 	if (mod == 1)
@@ -457,7 +460,7 @@ return type to anything you want
 		partial_merge(victim_data, victim_log, flagging);
 		s.partial_perge_cnt++;
 	}
-	else if (mod == -1)
+	else
 	{
 		full_merge(victim_data, victim_log);
 		s.full_merge_cnt++;
@@ -656,7 +659,35 @@ static void full_merge(int data_block, int log_block)
 
 			if (nand_read(log_block, page_to_read, &data, &spare) == -1)
 			{
+
+				int cnt_invalid = 0;
+				int mappinged = 0;
+				for (int i = 0; i < N_PAGES_PER_BLOCK; i++)
+				{
+					if (invalid_pages[data_block * N_PAGES_PER_BLOCK + i] == 1)
+					{
+						cnt_invalid++;
+					}
+					if (log_PMT[log_mem][i] == -1)
+					{
+						mappinged++;
+					}
+				}
+				int valid_count = 0;
+				for (int i = 0; i < N_PAGES_PER_BLOCK; i++)
+				{
+					if (invalid_pages[data_block * N_PAGES_PER_BLOCK + i] == 1 && invalid_pages[log_block * N_PAGES_PER_BLOCK + i] != -1)
+					{
+						valid_count++;
+					}
+					if (invalid_pages[data_block * N_PAGES_PER_BLOCK + i] == 0 && invalid_pages[log_block * N_PAGES_PER_BLOCK + i] == -1)
+					{
+						valid_count++;
+					}
+				}
+
 				printf("merge read1 %d  %d %d \n", i, written_pages_per_block[log_block], written_pages_per_block[data_block]);
+				printf(" %d %d %d", cnt_invalid, mappinged, valid_count);
 			}
 			nand_write(spare_block, i, data, spare);
 			s.gc_write++;
